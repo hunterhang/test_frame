@@ -1,0 +1,13 @@
+[
+	{
+		"cmd":10001,
+		"type":2,
+		"ip":"127.0.0.1",
+		"port":1000,
+		"pre_req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_login_pwd\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"phone\":\"13316825575\",\"pwd\":\"96e79218965eb72c92a549dd5a330112\",\"os_type\":\"Android\"}} }\n",
+		"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"user_id\":2007}}}\n",
+		"thread_num":1,
+		"load_test_time":1,
+		"log_file":"./test1.log"
+	}
+]

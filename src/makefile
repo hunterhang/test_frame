@@ -1,8 +1,8 @@
 TAF_PATH = /home/zhanghong/Project/Project/tool/src/test_frame/tcinclude
+JSON_PATH = /home/xucuiping/3rd_party/sdk/json-c
+INCLUDE=-I. -I$(TAF_PATH) -I$(JSON_PATH)/include
 
-INCLUDE=-I. -I$(TAF_PATH) 
-
-LIBS= -lpthread $(TAF_PATH)/lib_taf.a 
+LIBS= -lpthread $(TAF_PATH)/lib_taf.a  $(JSON_PATH)/lib/libjson-c.a
 
 CC=gcc
 CXX=g++

@@ -6,6 +6,7 @@
 
 #include "Client.h"
 #include "../tcinclude/tc_http.h"
+#include "loadConfig.h"
 
 //static pthread_mutex_t *lockarray;
 
@@ -120,12 +121,13 @@ public:
 class TestCase_IOT : public TestCase
 {
 public:
-	TestCase_IOT(std::string &ip,unsigned short port)
+	TestCase_IOT(std::string &ip,unsigned short port,std::string &pre_req,std::string &req,std::string &log_file)
 	{
 		_ip = ip;
 		_port = port;
-		_pre_body = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_login_pwd\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"phone\":\"13316825575\",\"pwd\":\"96e79218965eb72c92a549dd5a330112\",\"os_type\":\"Android\"}} }\n";
-		_body = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"user_id\":2007}}}\n";
+		_pre_req = pre_req;
+		_req = req;
+		_log_file = log_file;
 	};
 	virtual int Init(void*arg)
 	{
@@ -142,13 +144,21 @@ public:
 		Client* client = NULL;
 		client = (Client*)arg;
 		std::string rsp;
-		int ret = client->tcp_iot(_body, rsp);
+		int ret = client->tcp_iot(_req, rsp);
 		if (ret != 0)
 		{
 			printf("SendAndRcv fail,ret:%d\n", ret);
 			return -1;
 		}
-		//printf("Execute:%s\n", rsp.c_str());
+		if (!_log_file.empty())
+		{
+
+			taf::TC_File file;
+			std::string old_log = file.load2str(_log_file);
+			old_log.append("\n");
+			old_log.append(rsp);
+			file.save2file(_log_file, old_log);
+		}
 		//判断成功失败
 		std::string succ_flag = "code\":0";
 		if (rsp.find(succ_flag) != std::string::npos)
@@ -161,16 +171,30 @@ public:
 	}
 	virtual int PreExecute(void *arg)
 	{
+		if (_pre_req.empty())
+		{
+			return 0;
+		}
 		Client* client = NULL;
 		client = (Client*)arg;
 		std::string rsp;
-		int ret = client->tcp_iot(_pre_body, rsp);
+		int ret = client->tcp_iot(_pre_req, rsp);
 		if (ret != 0)
 		{
 			printf("SendAndRcv1 fail,ret:%d\n", ret);
 			return -1;
 		}
-		printf("PreEx rsp:%s\n", rsp.c_str());
+		if (!_log_file.empty())
+		{
+
+			taf::TC_File file;
+			std::string old_log = file.load2str(_log_file);
+			old_log.append(_pre_req);
+			old_log.append("\n");
+			old_log.append(rsp);
+			old_log.append("\n");
+			file.save2file(_log_file, old_log);
+		}
 		//判断成功失败
 		std::string succ_flag = "code\":0";
 		if (rsp.find(succ_flag) != std::string::npos)
@@ -187,26 +211,47 @@ private:
 	// 在这里定义需要使用的成员变量
 	std::string _ip;
 	unsigned short _port;
-	std::string _body;
-	std::string _pre_body;
+	std::string _req;
+	std::string _pre_req;
+	std::string _log_file;
 };
 
 int main(int argc, char* argv[])
 {
 
-	if (argc < 5)
+	if (argc < 3)
 	{
-		printf("Usage: %s cmd ip port threadNum time(s)\n", argv[0]);
+		printf("Usage: %s file cmd\n", argv[0]);
 		return 0;
 	}
-	int cmd = atoi(argv[1]);
-	string ip = argv[2];
-	unsigned int port = atoi(argv[3]);
-	int threadNum = atoi(argv[4]);
-	int time = atoi(argv[5]);
+	std::string file = argv[1];
+	unsigned int cmd = (unsigned int)atoi(argv[2]);
+	
+	LoadTestConfig config;
+	int ret = config.Init(file);
+	if (ret != 0)
+	{
+		printf("file not exist!%s\n", file.c_str());
+		return -1;
+	}
+	CmdInfo cmd_info;
+	ret = config.get_config(cmd,cmd_info);
+	if (ret != 0)
+	{
+		printf("cmd not in config file,cmd:%d\n",cmd);
+		return -2;
+	}
+
+	printf("============================================\n");
+	std::string s = cmd_info.to_str();
+	printf("%s\n", s.c_str());
+	printf("============================================\n");
+
 	// 测试框架实例
 	TestFrame tf;
-	TestCase_IOT case1(ip,port);
+	TestCase_IOT case1(cmd_info.ip,cmd_info.port,cmd_info.pre_req,cmd_info.req,cmd_info.log_file);
+	tf.SetTestCase(&case1);
+	/**
 	switch (cmd)
 	{
 	case 10000:
@@ -216,7 +261,7 @@ int main(int argc, char* argv[])
 		printf("ERROR CMD!\n");
 		break;
 	}
-
+	**/
 	// 测试案例实例
 	//TestCase001 tc001;
 
@@ -228,10 +273,10 @@ int main(int argc, char* argv[])
 
 	// 设置测试并发线程数
 	//tf.SetThreadNum(700);
-	tf.SetThreadNum(threadNum);
+	tf.SetThreadNum(cmd_info.thread_num);
 	// 设置测试持续时间，默认不限时间
 	//tf.SetDurationTime(30);
-	tf.SetDurationTime(time);
+	tf.SetDurationTime(cmd_info.load_test_time);
 	// 设置频率限制，默认不限频率
 	//tf.SetFrequence(1000);
 
