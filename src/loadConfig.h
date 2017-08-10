@@ -13,7 +13,6 @@ struct CmdInfo {
 		std::stringstream ss;
 		ss
 			<< "cmd:" << cmd << "\n"
-			<< "type:" << type << "\n"
 			<< "ip:" << ip << "\n"
 			<< "port:" << port << "\n"
 			<< "pre_req:" << pre_req << "\n"
@@ -25,7 +24,6 @@ struct CmdInfo {
 		return ss.str();
 	}
 	unsigned int cmd;
-	short type;
 	std::string ip;
 	unsigned short port;
 	std::string pre_req;

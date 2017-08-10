@@ -10,7 +10,7 @@ GCCVER := $(shell $(CC) -dumpversion | awk -F. '{ print $$1"."$$2}' )
 
 CFLAGS=-g -O2 -fPIC -Wall -pipe -fno-ident -D_GNU_SOURCE -D_REENTRANT -DTIXML_USE_STL -Wno-deprecated
 
-TARGET = test_tool
+TARGET = iot_load_test
 
 BINARY = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 

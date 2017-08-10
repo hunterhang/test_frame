@@ -155,9 +155,8 @@ public:
 
 			taf::TC_File file;
 			std::string old_log = file.load2str(_log_file);
-			old_log.append("\n");
 			old_log.append(rsp);
-			file.save2file(_log_file, old_log);
+			file.save2file(_log_file, old_log.c_str(), old_log.size());
 		}
 		//判断成功失败
 		std::string succ_flag = "code\":0";
@@ -186,14 +185,11 @@ public:
 		}
 		if (!_log_file.empty())
 		{
-
 			taf::TC_File file;
 			std::string old_log = file.load2str(_log_file);
 			old_log.append(_pre_req);
-			old_log.append("\n");
 			old_log.append(rsp);
-			old_log.append("\n");
-			file.save2file(_log_file, old_log);
+			file.save2file(_log_file, old_log.c_str(),old_log.size());
 		}
 		//判断成功失败
 		std::string succ_flag = "code\":0";
@@ -246,6 +242,17 @@ int main(int argc, char* argv[])
 	std::string s = cmd_info.to_str();
 	printf("%s\n", s.c_str());
 	printf("============================================\n");
+
+	if (!cmd_info.log_file.empty())
+	{
+		taf::TC_File file;
+		std::string old_log;
+		old_log.append(cmd_info.pre_req);
+		old_log.append("\n");
+		old_log.append(cmd_info.req);
+		old_log.append("\n");
+		file.save2file(cmd_info.log_file, old_log.c_str(), old_log.size());
+	}
 
 	// 测试框架实例
 	TestFrame tf;

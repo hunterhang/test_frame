@@ -57,20 +57,6 @@ int LoadTestConfig::parse(std::string &content)
 		}
 		cmd_info.cmd = json_object_get_int(_cmd);
 
-		//type
-		json_object *_type = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "type", &_type))
-		{
-			printf("config error!index:%d\n", i);
-			continue;
-		}
-		if (!json_object_is_type(_type, json_type_int))
-		{
-			printf("config error!type should be int,index:%d\n", i);
-			continue;
-		}
-		cmd_info.type = json_object_get_int(_type);
-
 		//ip
 		json_object *_ip = NULL;
 		if (!json_object_object_get_ex(_cmd_info, "ip", &_ip))
@@ -98,22 +84,19 @@ int LoadTestConfig::parse(std::string &content)
 		}
 		cmd_info.port = (unsigned short)json_object_get_int(_port);
 
-		if (cmd_info.type == 2)
+		//pre_req
+		json_object *_pre_req = NULL;
+		if (!json_object_object_get_ex(_cmd_info, "pre_req", &_pre_req))
 		{
-			//pre_req
-			json_object *_pre_req = NULL;
-			if (!json_object_object_get_ex(_cmd_info, "pre_req", &_pre_req))
-			{
-				printf("config error!index:%d\n", i);
-				continue;
-			}
-			if (!json_object_is_type(_pre_req, json_type_string))
-			{
-				printf("config error!_pre_req should be int,index:%d\n", i);
-				continue;
-			}
-			cmd_info.pre_req = json_object_get_string(_pre_req);
+			printf("config error!index:%d\n", i);
+			continue;
 		}
+		if (!json_object_is_type(_pre_req, json_type_string))
+		{
+			printf("config error!_pre_req should be int,index:%d\n", i);
+			continue;
+		}
+		cmd_info.pre_req = json_object_get_string(_pre_req);
 		//req
 		json_object *_req = NULL;
 		if (!json_object_object_get_ex(_cmd_info, "req", &_req))
