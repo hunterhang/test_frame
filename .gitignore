@@ -1,2 +1,3 @@
-*.o
+*.log
 iot_load_test
+*.o

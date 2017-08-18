@@ -18,7 +18,8 @@ all:$(TARGET)
 
 $(TARGET):$(BINARY)
 	$(CXX) $? -o $@ $(CFLAGS) $(INCLUDE) $(LIBS)
-    
+	cp $(TARGET) ../bin/
+
 %.o:%.cpp
 	$(CXX) -c $< -o $@ $(CFLAGS) $(INCLUDE)
 

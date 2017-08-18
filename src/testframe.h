@@ -113,9 +113,9 @@ class TestFrameStatistic
 
 		int cSuccessCount;
 		int cFailureCount;
-		int cTotalCount;
+		unsigned long long cTotalCount;
 		int cTimeoutCount;
-		int cDelaySum;
+		unsigned long long cDelaySum;
 		int cMaxDelayTime;
 		int cMinDelayTime;
 

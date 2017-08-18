@@ -4,9 +4,10 @@
 
 #include "testframe.h"
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <assert.h>
+#include <math.h>
 #include "Client.h"
 
 TestCase::TestCase()
@@ -239,16 +240,18 @@ int TestFrameThread::Execute(void *arg)
 {
 	int rc;
 
-	clock_t begin, end;
+	//clock_t begin, end;
 
-	begin = clock();
-
+	//begin = clock();
+	struct timeval begin, end;
+	gettimeofday(&begin, NULL);
 	// 执行测试案例
 	rc = cpTestFrame->cpTestCase->Execute(arg);
-
-	end = clock();
-
-	int delay = (end - begin)*1000/CLOCKS_PER_SEC;
+	gettimeofday(&end, NULL);
+	//end = clock();
+	int delay = floor((((end.tv_usec + 1000000 * end.tv_sec) - (begin.tv_usec + 1000000 * begin.tv_sec)))/1000);
+	//int delay = (end - begin)*1000/CLOCKS_PER_SEC;
+	//int delay = (end - begin);
 	cpTestFrame->cTestFrameStatistic->UpdateDelay(delay);
 
 	if (rc == 0)
@@ -284,7 +287,7 @@ TestFrameStatistic::TestFrameStatistic(TestFrame *tl):cpTestFrame(tl)
 	cTimeoutCount = 0;
 	cDelaySum = 0;
 	cMaxDelayTime = 0;
-	cMinDelayTime = 0;
+	cMinDelayTime = 999999999;
 
 	cSuccessCount_ps = 0;
 	cFailureCount_ps = 0;
@@ -292,7 +295,7 @@ TestFrameStatistic::TestFrameStatistic(TestFrame *tl):cpTestFrame(tl)
 	cTimeoutCount_ps = 0;
 	cDelaySum_ps = 0;
 	cMaxDelayTime_ps = 0;
-	cMinDelayTime_ps = 0;
+	cMinDelayTime_ps = 99999999;
 }
 
 TestFrameStatistic::~TestFrameStatistic()
@@ -360,15 +363,15 @@ void TestFrameStatistic::Output()
 
 	printf("##################################################################################################\n");
 	printf("[%s]\n", tmpbuf);
-	printf("success/s:%d failure/s:%d total/s:%d delayHealth/s:%2.2f%% delayAvg/s:%d maxDelay/s:%d minDelay/s:%d\n",
+	printf("success/s:%d failure/s:%d total/s:%d delayHealth/s:%2.2f%% delayAvg/s:%d ms maxDelay/s:%d ms minDelay/s:%d ms\n",
 			(int)cSuccessCount_ps, (int)cFailureCount_ps, (int)cTotalCount_ps,
 			cTotalCount_ps ? (cTotalCount_ps - cTimeoutCount_ps)*100.00/cTotalCount_ps : 100.00,
 			(int)cTotalCount_ps ? (int)cDelaySum_ps/(int)cTotalCount_ps:0, cMaxDelayTime_ps, cMinDelayTime_ps
 			);
-	printf("success:%d failure:%d total:%d delayHealth:%2.2f%% delayAvg:%d maxDelay:%d minDelay:%d\n",
+	printf("success:%d failure:%d total:%d delayHealth:%2.2f%% delayAvg:%llu ms maxDelay:%d ms minDelay:%d ms\n",
 			(int)cSuccessCount, (int)cFailureCount, (int)cTotalCount,
 			cTotalCount ? (cTotalCount - cTimeoutCount)*100.00/cTotalCount : 100.00,
-			(int)cTotalCount ? (int)cDelaySum/(int)cTotalCount:0, cMaxDelayTime, cMinDelayTime
+			cTotalCount ? cDelaySum/cTotalCount:0, cMaxDelayTime, cMinDelayTime
 			);
 
 	pthread_mutex_lock(&cMutex);
@@ -378,6 +381,6 @@ void TestFrameStatistic::Output()
 	cTimeoutCount_ps = 0;
 	cDelaySum_ps = 0;
 	cMaxDelayTime_ps = 0;
-	cMinDelayTime_ps = 999999;
+	cMinDelayTime_ps = 99999999;
 	pthread_mutex_unlock(&cMutex);
 }

@@ -7,6 +7,9 @@
 #include "Client.h"
 #include "../tcinclude/tc_http.h"
 #include "loadConfig.h"
+#include "testsynch.h"
+#include "../tcinclude/tc_singleton.h"
+#include "../tcinclude/tc_common.h"
 
 //static pthread_mutex_t *lockarray;
 
@@ -21,14 +24,13 @@ string param1;
 string param2;
 string param3;
 // 定义测试案例
-#if 0
 static unsigned long thread_id(void)
 {
 	unsigned long ret;
 	ret = (unsigned long)pthread_self();
 	return(ret);
 }
-
+#if 0
 static void lock_callback(int mode, int type, const char *file, int line)
 {
 	(void)file;
@@ -116,18 +118,52 @@ public:
 
 };
 #endif
+class log_file {
+public:
+	int Init(const std::string &filename)
+	{
+		_handle = fopen(filename.c_str(), "a+");
+		if (_handle == NULL)
+		{
+			return -1;
+		}
+		return 0;
+	}
 
+	void log(const std::string &log)
+	{
+		SmartLock smart_lock(_lock);
+		unsigned long t_id = thread_id();
+		std::string now = taf::TC_Common::now2str("%Y-%m-%d %H:%M:%S");
+		std::stringstream ss;
+		ss
+			<< "[" << now << "]"
+			<< "[" << t_id << "]"
+			<< log;
+		fputs(ss.str().c_str(), _handle);
+	}
+	log_file() :_handle(NULL) {};
+	~log_file() {
+		SmartLock smart_log(_lock);
+		fclose(_handle);
+	}
+private:
+	FILE *_handle;
+	MutexLock _lock;
+};
 
 class TestCase_IOT : public TestCase
 {
 public:
-	TestCase_IOT(std::string &ip,unsigned short port,std::string &pre_req,std::string &req,std::string &log_file)
+	TestCase_IOT(std::string &ip,unsigned short port,std::string &pre_req,std::string &req,std::string &log_file,std::string &pre_assert,std::string &assert)
 	{
 		_ip = ip;
 		_port = port;
 		_pre_req = pre_req;
 		_req = req;
 		_log_file = log_file;
+		_pre_assert = pre_assert;
+		_assert = assert;
 	};
 	virtual int Init(void*arg)
 	{
@@ -152,15 +188,12 @@ public:
 		}
 		if (!_log_file.empty())
 		{
-
-			taf::TC_File file;
-			std::string old_log = file.load2str(_log_file);
-			old_log.append(rsp);
-			file.save2file(_log_file, old_log.c_str(), old_log.size());
+			log_file * log = taf::TC_Singleton<log_file>::getInstance();
+			log->log(rsp);
 		}
 		//判断成功失败
-		std::string succ_flag = "code\":0";
-		if (rsp.find(succ_flag) != std::string::npos)
+		//std::string succ_flag = "code\":0";
+		if (rsp.find(_assert) != std::string::npos)
 		{
 			return 0;
 		}
@@ -185,15 +218,12 @@ public:
 		}
 		if (!_log_file.empty())
 		{
-			taf::TC_File file;
-			std::string old_log = file.load2str(_log_file);
-			old_log.append(_pre_req);
-			old_log.append(rsp);
-			file.save2file(_log_file, old_log.c_str(),old_log.size());
+			log_file * log = taf::TC_Singleton<log_file>::getInstance();
+			log->log(rsp);
 		}
 		//判断成功失败
-		std::string succ_flag = "code\":0";
-		if (rsp.find(succ_flag) != std::string::npos)
+		//std::string succ_flag = "code\":0";
+		if (rsp.find(_pre_assert) != std::string::npos)
 		{
 			return 0;
 		}
@@ -209,6 +239,8 @@ private:
 	unsigned short _port;
 	std::string _req;
 	std::string _pre_req;
+	std::string _pre_assert;
+	std::string _assert;
 	std::string _log_file;
 };
 
@@ -245,18 +277,14 @@ int main(int argc, char* argv[])
 
 	if (!cmd_info.log_file.empty())
 	{
-		taf::TC_File file;
-		std::string old_log;
-		old_log.append(cmd_info.pre_req);
-		old_log.append("\n");
-		old_log.append(cmd_info.req);
-		old_log.append("\n");
-		file.save2file(cmd_info.log_file, old_log.c_str(), old_log.size());
+		log_file * log = taf::TC_Singleton<log_file>::getInstance();
+		log->Init(cmd_info.log_file);
+		log->log(cmd_info.to_str());
 	}
 
 	// 测试框架实例
 	TestFrame tf;
-	TestCase_IOT case1(cmd_info.ip,cmd_info.port,cmd_info.pre_req,cmd_info.req,cmd_info.log_file);
+	TestCase_IOT case1(cmd_info.ip,cmd_info.port,cmd_info.pre_req,cmd_info.req,cmd_info.log_file,cmd_info.pre_assert,cmd_info.assert);
 	tf.SetTestCase(&case1);
 	/**
 	switch (cmd)
@@ -276,16 +304,20 @@ int main(int argc, char* argv[])
 	//tf.SetTestCase(&tc001);
 
 	// 设置测试重复次数，默认不限次数
-	//tf.SetRepeatCount(100000);
-
+	if (cmd_info.times_limit != 0)
+	{
+		tf.SetRepeatCount(cmd_info.times_limit);
+	}
+	
 	// 设置测试并发线程数
-	//tf.SetThreadNum(700);
 	tf.SetThreadNum(cmd_info.thread_num);
 	// 设置测试持续时间，默认不限时间
-	//tf.SetDurationTime(30);
 	tf.SetDurationTime(cmd_info.load_test_time);
 	// 设置频率限制，默认不限频率
-	//tf.SetFrequence(1000);
+	if (cmd_info.frequence != 0)
+	{
+		tf.SetFrequence(cmd_info.frequence);
+	}
 
 	// 设置时延阀值，用于统计时延健康度指标
 	//tf.SetDelayThreshold(300);

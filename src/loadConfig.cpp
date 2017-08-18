@@ -43,120 +43,84 @@ int LoadTestConfig::parse(std::string &content)
 			continue;
 		}
 		CmdInfo cmd_info;
-		//ip
-		json_object *_cmd = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "cmd", &_cmd))
+		std::string err_info;
+		//cmd
+		if (get(_cmd_info, "cmd", cmd_info.cmd, err_info) != 0)
 		{
-			printf("config error!index:%d\n", i);
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		if (!json_object_is_type(_cmd, json_type_int))
+		if (cmd_info.cmd <= 0)
 		{
-			printf("config error!cmd should be int,index:%d\n",i);
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		cmd_info.cmd = json_object_get_int(_cmd);
+		if (get(_cmd_info, "ip", cmd_info.ip, err_info) != 0)
+		{
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+			continue;
+		}
+		int port = 0;
+		if (get(_cmd_info, "port", port, err_info) != 0)
+		{
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+			continue;
+		}
+		cmd_info.port = (unsigned short)port;
+		
+		if (get(_cmd_info, "pre_req", cmd_info.pre_req, err_info) != 0)
+		{
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+			continue;
+		}
+		
+		if (get(_cmd_info, "req", cmd_info.req, err_info) != 0)
+		{
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+			continue;
+		}
+		//非必填
+		if (get(_cmd_info, "pre_assert", cmd_info.pre_assert, err_info) != 0)
+		{
+			//printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+		}
+		if (get(_cmd_info, "assert", cmd_info.assert, err_info) != 0)
+		{
+			//printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+		}
+		if (get(_cmd_info, "thread_num", cmd_info.thread_num, err_info) != 0)
+		{
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+			continue;
+		}
 
-		//ip
-		json_object *_ip = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "ip", &_ip))
-		{
-			printf("config error!index:%d\n", i);
-			continue;
-		}
-		if (!json_object_is_type(_ip, json_type_string))
-		{
-			printf("config error!ip should be int,index:%d\n", i);
-			continue;
-		}
-		cmd_info.ip = json_object_get_string(_ip);
 
-		//port
-		json_object *_port = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "port", &_port))
+		if (get(_cmd_info, "load_test_time", cmd_info.load_test_time, err_info) != 0)
 		{
-			printf("config error!index:%d\n", i);
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		if (!json_object_is_type(_port, json_type_int))
-		{
-			return -1;
-		}
-		cmd_info.port = (unsigned short)json_object_get_int(_port);
 
-		//pre_req
-		json_object *_pre_req = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "pre_req", &_pre_req))
+		if (get(_cmd_info, "times_limit", cmd_info.times_limit, err_info) != 0)
 		{
-			printf("config error!index:%d\n", i);
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		if (!json_object_is_type(_pre_req, json_type_string))
-		{
-			printf("config error!_pre_req should be int,index:%d\n", i);
-			continue;
-		}
-		cmd_info.pre_req = json_object_get_string(_pre_req);
-		//req
-		json_object *_req = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "req", &_req))
-		{
-			printf("config error!index:%d\n", i);
-			continue;
-		}
-		if (!json_object_is_type(_req, json_type_string))
-		{
-			printf("config error!_pre_req should be int,index:%d\n", i);
-			continue;
-		}
-		cmd_info.req = json_object_get_string(_req);
 
-		//thread_num
-		json_object *_thread_num = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "thread_num", &_thread_num))
+		if (get(_cmd_info, "frequence", cmd_info.frequence, err_info) != 0)
 		{
-			printf("config error!index:%d\n", i);
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		if (!json_object_is_type(_thread_num, json_type_int))
-		{
-			return -1;
-		}
-		cmd_info.thread_num = (unsigned int)json_object_get_int(_thread_num);
 
-		//load_test_time
-		json_object *_load_test_time = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "load_test_time", &_load_test_time))
+		if (get(_cmd_info, "log_file", cmd_info.log_file, err_info) != 0)
 		{
-			printf("config error!index:%d\n", i);
-			continue;
-		}
-		if (!json_object_is_type(_load_test_time, json_type_int))
-		{
-			return -1;
-		}
-		cmd_info.load_test_time = (unsigned int)json_object_get_int(_load_test_time);
-
-		//log_file
-		json_object *_log_file = NULL;
-		if (!json_object_object_get_ex(_cmd_info, "log_file", &_log_file))
-		{
-			printf("config error!index:%d\n", i);
-			continue;
-		}
-		if (!json_object_is_type(_log_file, json_type_string))
-		{
-			printf("config error!_log_file should be int,index:%d\n", i);
-			continue;
-		}
-		cmd_info.log_file = json_object_get_string(_log_file);
-		if (cmd_info.cmd == 0)
-		{
-			printf("config error!cmd error,index:%d\n", i);
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
 		_config_list.insert(make_pair(cmd_info.cmd, cmd_info));
 	}
+	json_object_put(root);
 	return 0;
 }
 
@@ -170,3 +134,76 @@ int LoadTestConfig::get_config(unsigned int cmd, CmdInfo &cmd_info)
 	}
 	return -1;
 }
+
+
+int LoadTestConfig::get(const json_object *root, const std::string &name, std::string &value, std::string &err_info) {
+	//method
+	json_object *_obj = NULL;
+	if (!json_object_object_get_ex(root, name.c_str(), &_obj))
+	{
+		err_info = "it is invalid req, no " + name;
+		return -1;
+	}
+	if (!json_object_is_type(_obj, json_type_string))
+	{
+		err_info = "it is invalid req, " + name + " isn't string.";
+		return -1;
+
+	}
+	value = json_object_get_string(_obj);
+	return 0;
+}
+
+int LoadTestConfig::get(const json_object *root, const std::string &name, unsigned long long &value, std::string &err_info) {
+	//method
+	json_object *_obj = NULL;
+	if (!json_object_object_get_ex(root, name.c_str(), &_obj))
+	{
+		err_info = "it is invalid req, no " + name;
+		return -1;
+	}
+	if (!json_object_is_type(_obj, json_type_int))
+	{
+		err_info = "it is invalid req, " + name + " isn't string.";
+		return -2;
+
+	}
+	value = (unsigned long long)json_object_get_int64(_obj);
+	return 0;
+}
+
+int LoadTestConfig::get(const json_object *root, const std::string &name, unsigned int &value, std::string &err_info) {
+	//method
+	json_object *_obj = NULL;
+	if (!json_object_object_get_ex(root, name.c_str(), &_obj))
+	{
+		err_info = "it is invalid req, no " + name;
+		return -1;
+	}
+	if (!json_object_is_type(_obj, json_type_int))
+	{
+		err_info = "it is invalid req, " + name + " isn't string.";
+		return -1;
+
+	}
+	value = (unsigned int)json_object_get_int(_obj);
+	return 0;
+}
+int LoadTestConfig::get(const json_object *root, const std::string &name, int &value, std::string &err_info) {
+	//method
+	json_object *_obj = NULL;
+	if (!json_object_object_get_ex(root, name.c_str(), &_obj))
+	{
+		err_info = "it is invalid req, no " + name;
+		return -1;
+	}
+	if (!json_object_is_type(_obj, json_type_int))
+	{
+		err_info = "it is invalid req, " + name + " isn't string.";
+		return -1;
+
+	}
+	value = (int)json_object_get_int(_obj);
+	return 0;
+}
+

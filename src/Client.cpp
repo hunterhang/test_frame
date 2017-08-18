@@ -255,7 +255,6 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 
 int Client::GetServer(string& ip, int& port)
 {
-	printf("addr_size:%zu\n", addrs.size());
 	if (addrs.empty())
 		return SDK_ERR_ADDRESS;
 	int i = Rand() % addrs.size();
