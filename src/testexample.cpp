@@ -10,7 +10,7 @@
 #include "testsynch.h"
 #include "../tcinclude/tc_singleton.h"
 #include "../tcinclude/tc_common.h"
-
+#include <sys/time.h>
 //static pthread_mutex_t *lockarray;
 
 #define MAX_SDK_BUFFER_SIZE 1024
@@ -118,6 +118,89 @@ public:
 
 };
 #endif
+
+class PreparePool {
+public:
+	PreparePool(){};
+	void Init(unsigned long long num)
+	{
+		_num = num;
+	}
+	std::string getIncre() {
+		SmartLock lock(_lock);
+		_num++;
+		std::stringstream ss;
+		ss
+			<< _num;
+		return ss.str();
+	}
+private:
+	MutexLock _lock;
+	unsigned long long _num;
+};
+
+class UserIdPool {
+public:
+	void Init()
+	{
+		_min_user_id = 33000;
+		_max_user_id = 38000;
+	}
+	std::string getUserId()
+	{
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		srand(tv.tv_usec);
+		unsigned long long offset= rand() % (_max_user_id-_min_user_id - 1);
+		unsigned long long final_id = _min_user_id + offset;
+		std::stringstream ss;
+		ss
+			<< final_id;
+		return ss.str();
+	}
+private:
+	unsigned long long _min_user_id;
+	unsigned long long _max_user_id;
+};
+
+class FamilyIdPool {
+public:
+
+	std::string getFamilyId()
+	{
+		return "";
+	}
+private:
+	unsigned long long _min_family_id;
+	unsigned long long _max_family_id;
+};
+
+class ReqPool {
+public:
+	void Init()
+	{
+		std::string ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"user_id\":$user_id}}}\n";
+		_list.push_back(ss);
+	}
+	std::string getReq()
+	{
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		srand(tv.tv_usec);
+		unsigned int index = rand() % _list.size();
+		if (index == 0)
+		{
+			index = 1;
+		}
+		std::string req = _list[index - 1];
+		std::string user_id = taf::TC_Singleton<UserIdPool>::getInstance()->getUserId();
+		req = TC_Common::replace(req, "$user_id", user_id);
+		return req;
+	}
+private:
+	std::vector<std::string> _list;
+};
+
 class log_file {
 public:
 	int Init(const std::string &filename)
@@ -180,7 +263,9 @@ public:
 		Client* client = NULL;
 		client = (Client*)arg;
 		std::string rsp;
-		int ret = client->tcp_iot(_req, rsp);
+		std::string req = taf::TC_Singleton<ReqPool>::getInstance()->getReq();
+		
+		int ret = client->tcp_iot(req, rsp);
 		if (ret != 0)
 		{
 			printf("SendAndRcv fail,ret:%d\n", ret);
@@ -210,7 +295,10 @@ public:
 		Client* client = NULL;
 		client = (Client*)arg;
 		std::string rsp;
-		int ret = client->tcp_iot(_pre_req, rsp);
+		//替换变量
+		PreparePool * pool = taf::TC_Singleton<PreparePool>::getInstance();
+		std::string req = TC_Common::replace(_pre_req, "$phone", pool->getIncre());
+		int ret = client->tcp_iot(req, rsp);
 		if (ret != 0)
 		{
 			printf("SendAndRcv1 fail,ret:%d\n", ret);
@@ -281,7 +369,11 @@ int main(int argc, char* argv[])
 		log->Init(cmd_info.log_file);
 		log->log(cmd_info.to_str());
 	}
+	//初始化预设参数
 
+	taf::TC_Singleton<PreparePool>::getInstance()->Init(19900000001);
+	taf::TC_Singleton<ReqPool>::getInstance()->Init();
+	taf::TC_Singleton<UserIdPool>::getInstance()->Init();
 	// 测试框架实例
 	TestFrame tf;
 	TestCase_IOT case1(cmd_info.ip,cmd_info.port,cmd_info.pre_req,cmd_info.req,cmd_info.log_file,cmd_info.pre_assert,cmd_info.assert);

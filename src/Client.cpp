@@ -247,7 +247,6 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 			break;
 		}
 	}
-	//printf("rsp:%s\n", chunk);
 	rsp_buf.assign(chunk, sizeof(chunk));
 	return SDK_SUCCESS;
 }
