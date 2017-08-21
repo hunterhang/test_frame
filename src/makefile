@@ -12,7 +12,7 @@ CFLAGS=-g -O2 -fPIC -Wall -pipe -fno-ident -D_GNU_SOURCE -D_REENTRANT -DTIXML_US
 
 TARGET = iot_mult_load_test
 
-BINARY = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
+BINARY = $(patsubst %.cpp, obj/%.o, $(wildcard *.cpp))
 
 all:$(TARGET)
 
@@ -20,11 +20,12 @@ $(TARGET):$(BINARY)
 	$(CXX) $? -o $@ $(CFLAGS) $(INCLUDE) $(LIBS)
 	cp $(TARGET) ../bin/
 
-%.o:%.cpp
+obj/%.o:%.cpp
 	$(CXX) -c $< -o $@ $(CFLAGS) $(INCLUDE)
 
 clean:
 	@rm -f $(TARGET) $(BINARY)
+
 
 all32:
 	make -e ARCH=32
