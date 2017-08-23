@@ -7,6 +7,11 @@
 #include "json-c/json.h"
 #include "../tcinclude/tc_file.h"
 
+struct TcpInfo {
+
+	std::string _ip;
+	unsigned short _port;
+};
 struct CmdInfo {
 public:
 	CmdInfo():times_limit(0),frequence(0) {
@@ -18,8 +23,7 @@ public:
 		std::stringstream ss;
 		ss
 			<< "cmd:" << cmd << "\n"
-			<< "ip:" << ip << "\n"
-			<< "port:" << port << "\n"
+			<< "tcp_info.size()=" <<_tcp_info.size()<<"\n"
 			<< "pre_req:" << pre_req << "\n"
 			<< "pre_assert:" <<pre_assert << "\n"
 			<< "req:" << req << "\n"
@@ -33,8 +37,7 @@ public:
 		return ss.str();
 	}
 	unsigned int cmd;
-	std::string ip;
-	unsigned short port;
+	std::vector<TcpInfo> _tcp_info;
 	std::string pre_req;
 	std::string pre_assert;
 	std::string req;

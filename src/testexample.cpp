@@ -155,10 +155,9 @@ private:
 class TestCase_IOT : public TestCase
 {
 public:
-	TestCase_IOT(std::string &ip,unsigned short port,std::string &pre_req,std::string &req,std::string &log_file,std::string &pre_assert,std::string &assert)
+	TestCase_IOT(std::vector<TcpInfo> &ip_port,std::string &pre_req,std::string &req,std::string &log_file,std::string &pre_assert,std::string &assert)
 	{
-		_ip = ip;
-		_port = port;
+		_ip_port.assign(ip_port.begin(), ip_port.end());
 		_pre_req = pre_req;
 		_req = req;
 		_log_file = log_file;
@@ -169,7 +168,11 @@ public:
 	{
 		Client* client = NULL;
 		client = (Client*)arg;
-		client->AddServer(_ip, _port);
+		
+		for (size_t i = 0; i < _ip_port.size(); i++)
+		{
+			client->AddServer(_ip_port[i]._ip,_ip_port[i]._port);
+		}
 		return 0;
 	};
 	virtual ~TestCase_IOT()
@@ -235,8 +238,7 @@ public:
 
 private:
 	// 在这里定义需要使用的成员变量
-	std::string _ip;
-	unsigned short _port;
+	std::vector<TcpInfo> _ip_port;
 	std::string _req;
 	std::string _pre_req;
 	std::string _pre_assert;
@@ -284,7 +286,7 @@ int main(int argc, char* argv[])
 
 	// 测试框架实例
 	TestFrame tf;
-	TestCase_IOT case1(cmd_info.ip,cmd_info.port,cmd_info.pre_req,cmd_info.req,cmd_info.log_file,cmd_info.pre_assert,cmd_info.assert);
+	TestCase_IOT case1(cmd_info._tcp_info,cmd_info.pre_req,cmd_info.req,cmd_info.log_file,cmd_info.pre_assert,cmd_info.assert);
 	tf.SetTestCase(&case1);
 	/**
 	switch (cmd)

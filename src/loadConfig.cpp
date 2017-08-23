@@ -55,23 +55,28 @@ int LoadTestConfig::parse(std::string &content)
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		if (get(_cmd_info, "ip", cmd_info.ip, err_info) != 0)
+
+		std::string ip_port_str;
+		if (get(_cmd_info, "ip_port", ip_port_str, err_info) != 0)
 		{
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		int port = 0;
-		if (get(_cmd_info, "port", port, err_info) != 0)
+		std::vector<std::string> tmp = taf::TC_Common::sepstr<std::string>(ip_port_str, "|");
+		for (size_t j = 0; j < tmp.size(); j++)
 		{
-			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
-			continue;
+			std::vector<std::string> _tmp = taf::TC_Common::sepstr<std::string>(tmp[j], ":");
+			if (!_tmp[0].empty() && !_tmp[1].empty())
+			{
+				TcpInfo tcp_info;
+				tcp_info._ip = _tmp[0];
+				tcp_info._port = taf::TC_Common::strto<unsigned short>(_tmp[1]);
+				cmd_info._tcp_info.push_back(tcp_info);
+			}
 		}
-		cmd_info.port = (unsigned short)port;
-		
-		if (get(_cmd_info, "pre_req", cmd_info.pre_req, err_info) != 0)
+		if (cmd_info._tcp_info.size() == 0)
 		{
-			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
-			continue;
+			printf("ip_port config error!index:%d\n", i);
 		}
 		
 		if (get(_cmd_info, "req", cmd_info.req, err_info) != 0)

@@ -2,8 +2,7 @@
  {
 	 "desc":"user_login",
      "cmd":10001,
-     "ip":"127.0.0.1",
-     "port":1000,
+     "ip_port":"127.0.0.1:3000|",
      "pre_req":"",
      "req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"user_id\":2007}}}\n",
      "thread_num":1,
