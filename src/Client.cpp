@@ -16,7 +16,7 @@
 #include "../tcinclude/tc_http.h"
 using namespace std;
 
-#define TIME_OUT 5
+#define TIME_OUT 3
 
 Client::Client() :sockfd(-1)
 {
@@ -185,7 +185,7 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 		{
 			close(sockfd);
 			sockfd = -1;
-			printf("connect sockfd fail!%d\n",ret);
+			printf("connect sockfd fail!%d\n", ret);
 			return SDK_ERR_SOCKET;
 		}
 	}
@@ -247,8 +247,10 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 			break;
 		}
 	}
+	//printf("rsp:%s\n", chunk);
 	rsp_buf.assign(chunk, sizeof(chunk));
 	return SDK_SUCCESS;
+
 }
 
 

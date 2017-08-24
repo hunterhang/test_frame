@@ -7,23 +7,27 @@
 #include "json-c/json.h"
 #include "../tcinclude/tc_file.h"
 
+struct TcpInfo {
+
+	std::string _ip;
+	unsigned short _port;
+};
+struct ReqInfo {
+	std::string _req;
+	std::string _assert;
+};
 struct CmdInfo {
 public:
 	CmdInfo():times_limit(0),frequence(0) {
-		pre_assert = "code\":0";
-		assert = "code\":0";
 	};
 	std::string to_str()
 	{
 		std::stringstream ss;
 		ss
 			<< "cmd:" << cmd << "\n"
-			<< "ip:" << ip << "\n"
-			<< "port:" << port << "\n"
-			<< "pre_req:" << pre_req << "\n"
-			<< "pre_assert:" <<pre_assert << "\n"
-			<< "req:" << req << "\n"
-			<< "assert:" << assert << "\n"
+			<< "tcp_info.size():" <<_tcp_info.size()<<"\n"
+			<< "req_list:" << _req_list.size() << "\n"
+			<< "first_user_phone:" << _first_user_phone << "\n"
 			<< "thread_num:" << thread_num << "\n"
 			<< "load_test_time:" << load_test_time << "\n"
 			<< "times_limit:" << times_limit << "\n"
@@ -33,12 +37,9 @@ public:
 		return ss.str();
 	}
 	unsigned int cmd;
-	std::string ip;
-	unsigned short port;
-	std::string pre_req;
-	std::string pre_assert;
-	std::string req;
-	std::string assert;
+	std::vector<TcpInfo> _tcp_info;
+	std::vector<ReqInfo> _req_list;
+	std::string _first_user_phone;
 	unsigned int thread_num;
 	unsigned int load_test_time;
 	unsigned long long times_limit;

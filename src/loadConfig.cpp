@@ -33,7 +33,6 @@ int LoadTestConfig::parse(std::string &content)
 		json_object_put(root);
 		return -2;
 	}
-
 	int size = json_object_array_length(root);
 	for (int i = 0; i < size; i++)
 	{
@@ -55,45 +54,41 @@ int LoadTestConfig::parse(std::string &content)
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		if (get(_cmd_info, "ip", cmd_info.ip, err_info) != 0)
+
+		std::string ip_port_str;
+		if (get(_cmd_info, "ip_port", ip_port_str, err_info) != 0)
 		{
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-		int port = 0;
-		if (get(_cmd_info, "port", port, err_info) != 0)
+		std::vector<std::string> tmp = taf::TC_Common::sepstr<std::string>(ip_port_str, "|");
+		for (size_t j = 0; j < tmp.size(); j++)
 		{
-			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
-			continue;
+			std::vector<std::string> _tmp = taf::TC_Common::sepstr<std::string>(tmp[j], ":");
+			if (!_tmp[0].empty() && !_tmp[1].empty())
+			{
+				TcpInfo tcp_info;
+				tcp_info._ip = _tmp[0];
+				tcp_info._port = taf::TC_Common::strto<unsigned short>(_tmp[1]);
+				cmd_info._tcp_info.push_back(tcp_info);
+			}
 		}
-		cmd_info.port = (unsigned short)port;
+		if (cmd_info._tcp_info.size() == 0)
+		{
+			printf("ip_port config error!index:%d\n", i);
+		}
 		
-		if (get(_cmd_info, "pre_req", cmd_info.pre_req, err_info) != 0)
+		if (get(_cmd_info, "first_user_phone", cmd_info._first_user_phone, err_info) != 0)
 		{
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
 		
-		if (get(_cmd_info, "req", cmd_info.req, err_info) != 0)
-		{
-			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
-			continue;
-		}
-		//非必填
-		if (get(_cmd_info, "pre_assert", cmd_info.pre_assert, err_info) != 0)
-		{
-			//printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
-		}
-		if (get(_cmd_info, "assert", cmd_info.assert, err_info) != 0)
-		{
-			//printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
-		}
 		if (get(_cmd_info, "thread_num", cmd_info.thread_num, err_info) != 0)
 		{
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
-
 
 		if (get(_cmd_info, "load_test_time", cmd_info.load_test_time, err_info) != 0)
 		{
@@ -117,6 +112,38 @@ int LoadTestConfig::parse(std::string &content)
 		{
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
+		}
+
+		//解析req_list
+		json_object *_req_list_obj = NULL;
+		if (!json_object_object_get_ex(_cmd_info, "req_list", &_req_list_obj))
+		{
+			err_info = "it is invalid req, no req_list";
+			return -1;
+		}
+		if (!json_object_is_type(_req_list_obj, json_type_array))
+		{
+			printf("_req_list_obj str not array!\n");
+			json_object_put(root);
+			return -2;
+		}
+		int ssize = json_object_array_length(_req_list_obj);
+		
+		for (int j = 0; j < ssize; j++)
+		{
+			ReqInfo req_info;
+			json_object *_req_obj = json_object_array_get_idx(_req_list_obj, j);
+			if (get(_req_obj, "req", req_info._req, err_info) != 0)
+			{
+				printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+				continue;
+			}
+			if (get(_req_obj, "assert", req_info._assert, err_info) != 0)
+			{
+				printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+				continue;
+			}
+			cmd_info._req_list.push_back(req_info);
 		}
 		_config_list.insert(make_pair(cmd_info.cmd, cmd_info));
 	}
