@@ -139,50 +139,32 @@ private:
 	unsigned long long _num;
 };
 
-class UserIdPool {
-public:
-	void Init()
-	{
-		_min_user_id = 33000;
-		_max_user_id = 38000;
-	}
-	std::string getUserId()
-	{
-		struct timeval tv;
-		gettimeofday(&tv, 0);
-		srand(tv.tv_usec);
-		unsigned long long offset= rand() % (_max_user_id-_min_user_id - 1);
-		unsigned long long final_id = _min_user_id + offset;
-		std::stringstream ss;
-		ss
-			<< final_id;
-		return ss.str();
-	}
-private:
-	unsigned long long _min_user_id;
-	unsigned long long _max_user_id;
-};
 
-class FamilyIdPool {
-public:
-
-	std::string getFamilyId()
-	{
-		return "";
-	}
-private:
-	unsigned long long _min_family_id;
-	unsigned long long _max_family_id;
-};
 
 class ReqPool {
 public:
 	void Init()
 	{
-		std::string ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"user_id\":$user_id}}}\n";
+		std::string ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":123}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"user_id\":$user_id}}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_info\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_apply_code\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_invitation\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id,\"target_user_id\":$user_id}}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_member_list\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_member_id_list\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":123}}\n";
+		_list.push_back(ss);
+		ss = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_switch_family\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n";
 		_list.push_back(ss);
 	}
-	std::string getReq()
+	std::string getReq(std::string &user_id, std::string &family_id)
 	{
 		struct timeval tv;
 		gettimeofday(&tv, 0);
@@ -193,9 +175,32 @@ public:
 			index = 1;
 		}
 		std::string req = _list[index - 1];
-		std::string user_id = taf::TC_Singleton<UserIdPool>::getInstance()->getUserId();
 		req = TC_Common::replace(req, "$user_id", user_id);
+		req = TC_Common::replace(req, "$family_id", family_id);
 		return req;
+	}
+	std::string getReq(size_t index)
+	{
+		return _list[index];
+	}
+	static int getVal(const std::string &rsp, const std::string &name,const size_t pos,std::string &val)
+	{
+		size_t p1 = rsp.find(name);
+		if (p1 == std::string::npos)
+		{
+			printf("get user_id from rsp fail!\n");
+			return -2;
+		}
+		size_t p2 = rsp.find_first_of(",", p1 + 1);
+		if (p2 == std::string::npos)
+		{
+			printf("get user_id from rsp fail!\n");
+			return -3;
+		}
+		std::string s_rsp = rsp;
+		size_t name_len = name.size();
+		val = s_rsp.substr(p1 + name_len+pos, p2 - p1 - name_len -pos);
+		return 0;
 	}
 private:
 	std::vector<std::string> _list;
@@ -263,7 +268,7 @@ public:
 		Client* client = NULL;
 		client = (Client*)arg;
 		std::string rsp;
-		std::string req = taf::TC_Singleton<ReqPool>::getInstance()->getReq();
+		std::string req = taf::TC_Singleton<ReqPool>::getInstance()->getReq(_user_id,_family_id);
 		
 		int ret = client->tcp_iot(req, rsp);
 		if (ret != 0)
@@ -274,7 +279,15 @@ public:
 		if (!_log_file.empty())
 		{
 			log_file * log = taf::TC_Singleton<log_file>::getInstance();
-			log->log(rsp);
+			stringstream ss;
+			ss
+				<< "req:"
+				<< req 
+				<< "\n"
+				<< "rsp:"
+				<< rsp
+				<< std::endl;
+			log->log(ss.str());
 		}
 		//判断成功失败
 		//std::string succ_flag = "code\":0";
@@ -313,6 +326,34 @@ public:
 		//std::string succ_flag = "code\":0";
 		if (rsp.find(_pre_assert) != std::string::npos)
 		{
+			std::string val;
+			int ret = ReqPool::getVal(rsp, "user_id", 2, val);
+			if (ret != 0)
+			{
+				printf("getVal fail!ret:%d\n", ret);
+				return -3;
+			}
+			_user_id = val;
+			std::string sreq = "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":123}}\n";
+			ret = client->tcp_iot(sreq, rsp);
+			if (ret != 0)
+			{
+				printf("SendAndRcv1 fail,ret:%d\n", ret);
+				return -1;
+			}
+			if (rsp.find(_pre_assert) == std::string::npos)
+			{
+				printf("api fail!req:%s\n rsp:%s\n", sreq.c_str(),rsp.c_str());
+				return -2;
+			}
+			ret = ReqPool::getVal(rsp, "family_id", 2, val);
+			if (ret != 0)
+			{
+				printf("getVal fail!ret:%d\n", ret);
+				return -3;
+			}
+			_family_id = val;
+			printf("prepare req success!user_id:%s,family_id:%s\n",_user_id.c_str(),_family_id.c_str());
 			return 0;
 		}
 		else {
@@ -330,11 +371,12 @@ private:
 	std::string _pre_assert;
 	std::string _assert;
 	std::string _log_file;
+	std::string _user_id;
+	std::string _family_id;
 };
 
 int main(int argc, char* argv[])
 {
-
 	if (argc < 3)
 	{
 		printf("Usage: %s file cmd\n", argv[0]);
@@ -371,9 +413,8 @@ int main(int argc, char* argv[])
 	}
 	//初始化预设参数
 
-	taf::TC_Singleton<PreparePool>::getInstance()->Init(19900000001);
+	taf::TC_Singleton<PreparePool>::getInstance()->Init(19900001000);
 	taf::TC_Singleton<ReqPool>::getInstance()->Init();
-	taf::TC_Singleton<UserIdPool>::getInstance()->Init();
 	// 测试框架实例
 	TestFrame tf;
 	TestCase_IOT case1(cmd_info.ip,cmd_info.port,cmd_info.pre_req,cmd_info.req,cmd_info.log_file,cmd_info.pre_assert,cmd_info.assert);
