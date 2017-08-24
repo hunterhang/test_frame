@@ -1,12 +1,12 @@
 [
 {
-     "desc":"user_get_profile",
-     "cmd":10002,
-	 "ip_port":"127.0.0.1:1000",
-	 "first_user_phone":"19900001000",
-	 "req_list":[
+	"desc":"user_get_profile",
+		"cmd":10002,
+		"ip_port":"127.0.0.1:1000",
+		"first_user_phone":"19900001000",
+		"req_list":[
 		{
-			"req": "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":123}}\n",
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_update_user_profile\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"name\":\"user($user_id)\",\"nick\":\"nick($user_id)\",\"gender\":1,\"avatar\":\"http://image.tianjimedia.com/uploadImages/2015/186/25/NJ058R604O8I.jpg\",\"birthday\":\"1986-12-12\"}}}\n",
 			"assert":"code\":0"
 		},
 		{
@@ -15,37 +15,33 @@
 		},
 		{
 			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_info\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n",
-			"assert":"code\":0"
+			"assert":"code\":-16027"
 		},
 		{
 			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_apply_code\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n",
+			"assert":"code\":-16009"
+		},
+		{
+			"req": "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":123}}\n",
 			"assert":"code\":0"
 		},
 		{
 			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_invitation\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id,\"target_user_id\":$user_id}}}\n",
-			"assert":"code\":0"
+			"assert":"code\":-16016"
 		},
 		{
 			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_member_list\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n",
 			"assert":"code\":0"
 		},
 		{
-			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_member_id_list\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n",
-			"assert":"code\":0"
-		},
-		{
-			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":123}}\n",
-			"assert":"code\":0"
-		},
-		{
 			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_switch_family\",\"timestamp\":12345667,\"req_id\":123,\"params\":{\"family_id\":$family_id}}}\n",
 			"assert":"code\":0"
-		},
-	 ],
-     "thread_num":10,
-     "load_test_time":10,
-	 "times_limit":200,
-	 "frequence":5,
-     "log_file":"./test1.log"
+		}
+		],
+		"thread_num":2,
+		"load_test_time":3600,
+		"times_limit":2000000,
+		"frequence":10,
+		"log_file":"./test1.log"
 }
 ]
