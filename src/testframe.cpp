@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <math.h>
 #include "Client.h"
+#include "log.h"
 
 TestCase::TestCase()
 {
@@ -358,22 +359,24 @@ void TestFrameStatistic::UpdateDelay(int delay)
 void TestFrameStatistic::Output()
 {
 	time_t now = time(NULL);
+	char report_buf[2048] = { 0 };
 	char tmpbuf[128];
 	strftime(tmpbuf, sizeof(tmpbuf), "%Y-%m-%d %H:%M:%S", localtime(&now));
 
-	printf("##################################################################################################\n");
-	printf("[%s]\n", tmpbuf);
-	printf("success/s:%d failure/s:%d total/s:%d delayHealth/s:%2.2f%% delayAvg/s:%d ms maxDelay/s:%d ms minDelay/s:%d ms\n",
+	int pos = snprintf(report_buf,sizeof(report_buf),"##################################################################################################\n");
+	pos += snprintf(report_buf+pos,sizeof(report_buf) - pos,"[%s]\n", tmpbuf);
+	pos += snprintf(report_buf+pos,sizeof(report_buf) - pos,"success/s:%d failure/s:%d total/s:%d delayHealth/s:%2.2f%% delayAvg/s:%d ms maxDelay/s:%d ms minDelay/s:%d ms\n",
 			(int)cSuccessCount_ps, (int)cFailureCount_ps, (int)cTotalCount_ps,
 			cTotalCount_ps ? (cTotalCount_ps - cTimeoutCount_ps)*100.00/cTotalCount_ps : 100.00,
 			(int)cTotalCount_ps ? (int)cDelaySum_ps/(int)cTotalCount_ps:0, cMaxDelayTime_ps, cMinDelayTime_ps
 			);
-	printf("success:%d failure:%d total:%d delayHealth:%2.2f%% delayAvg:%llu ms maxDelay:%d ms minDelay:%d ms\n",
+	pos += snprintf(report_buf + pos,sizeof(report_buf) - pos,"success:%d failure:%d total:%d delayHealth:%2.2f%% delayAvg:%llu ms maxDelay:%d ms minDelay:%d ms\n",
 			(int)cSuccessCount, (int)cFailureCount, (int)cTotalCount,
 			cTotalCount ? (cTotalCount - cTimeoutCount)*100.00/cTotalCount : 100.00,
 			cTotalCount ? cDelaySum/cTotalCount:0, cMaxDelayTime, cMinDelayTime
 			);
-
+	printf("%s\n", report_buf);
+	taf::TC_Singleton<log_file>::getInstance()->log_error(report_buf);
 	pthread_mutex_lock(&cMutex);
 	cSuccessCount_ps = 0;
 	cFailureCount_ps = 0;

@@ -113,6 +113,19 @@ int LoadTestConfig::parse(std::string &content)
 			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
 			continue;
 		}
+		std::string debug = "true";
+		if (get(_cmd_info, "debug", debug, err_info) != 0)
+		{
+			printf("config error!index:%d,err_info:%s\n", i, err_info.c_str());
+			continue;
+		}
+		if (debug != "true")
+		{
+			cmd_info.is_debug = false;
+		}
+		else {
+			cmd_info.is_debug = true;
+		}
 
 		//解析req_list
 		json_object *_req_list_obj = NULL;

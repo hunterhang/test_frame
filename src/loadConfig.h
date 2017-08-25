@@ -18,7 +18,7 @@ struct ReqInfo {
 };
 struct CmdInfo {
 public:
-	CmdInfo():times_limit(0),frequence(0) {
+	CmdInfo():times_limit(0),frequence(0),is_debug(true) {
 	};
 	std::string to_str()
 	{
@@ -33,6 +33,7 @@ public:
 			<< "times_limit:" << times_limit << "\n"
 			<< "frequence:" << frequence << "\n"
 			<< "log_file:" << log_file << "\n"
+			<< "is_debug:" << is_debug<< "\n"
 			<< endl;
 		return ss.str();
 	}
@@ -45,6 +46,7 @@ public:
 	unsigned long long times_limit;
 	unsigned long long frequence;
 	std::string log_file;
+	bool is_debug;
 };
 class LoadTestConfig {
 public:

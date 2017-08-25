@@ -6,10 +6,11 @@
 
 #include "Client.h"
 #include "../tcinclude/tc_http.h"
-#include "loadConfig.h"
-#include "testsynch.h"
 #include "../tcinclude/tc_singleton.h"
 #include "../tcinclude/tc_common.h"
+#include "loadConfig.h"
+#include "testsynch.h"
+#include "log.h"
 #include <sys/time.h>
 //static pthread_mutex_t *lockarray;
 
@@ -18,106 +19,6 @@
 #define QUERY_HTTP() client->http(httpBuffer,rspBuffer)
 
 using namespace std;
-using namespace taf;
-
-string param1;
-string param2;
-string param3;
-// 定义测试案例
-static unsigned long thread_id(void)
-{
-	unsigned long ret;
-	ret = (unsigned long)pthread_self();
-	return(ret);
-}
-#if 0
-static void lock_callback(int mode, int type, const char *file, int line)
-{
-	(void)file;
-	(void)line;
-	if (mode & CRYPTO_LOCK) {
-		pthread_mutex_lock(&(lockarray[type]));
-	}
-	else {
-		pthread_mutex_unlock(&(lockarray[type]));
-	}
-}
-
-static void init_locks(void)
-{
-	int i;
-	lockarray = (pthread_mutex_t *)OPENSSL_malloc(CRYPTO_num_locks() *
-		sizeof(pthread_mutex_t));
-	for (i = 0; i < CRYPTO_num_locks(); i++) {
-		pthread_mutex_init(&(lockarray[i]), NULL);
-	}
-	CRYPTO_set_id_callback((unsigned long(*)())thread_id);
-	CRYPTO_set_locking_callback(lock_callback);
-}
-static void kill_locks(void)
-{
-	int i;
-	CRYPTO_set_locking_callback(NULL);
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-		pthread_mutex_destroy(&(lockarray[i]));
-	OPENSSL_free(lockarray);
-}
-
-class TestCase_Https : public TestCase
-{
-public:
-	TestCase_Https()
-	{
-
-		// 在这里编写初始化代码
-		// SDK初始化，数据库连接初始化，打开文件 等等
-	};
-	virtual ~TestCase_Https()
-	{
-		// 在这里编写销毁代码
-		// SDK销毁，断开数据库连接，关闭文件 等等
-	};
-
-	virtual int Execute(void*arg)
-	{
-		const char *ip = "10.217.252.221";
-		int port = 443;
-		std::string err_msg;
-
-		HttpsClient  https_client;
-		if (0 != https_client.Init(ip, port, err_msg))
-		{
-			printf("Init err[%s]\n", err_msg.c_str());
-			return -1;
-		}
-
-		char buffer[4096] = { '\0' };
-		snprintf(buffer, 4096 - 1,
-			"GET /share/qq?uid=UUUU&token=JJJJ&appkey_id=7879797798&encode=1 HTTP/1.1\r\n"
-			"Host: %s:%d \r\n"
-			"Connection: close\r\n"             //"Connection: Keep-Alive\r\n"
-			"Cache-Control: no-cache\r\n"
-			"Content-Length: 0\r\n"
-			"Content-Type: application/x-www-form-urlencoded\r\n\r\n",
-			"10.217.252.221", port);
-
-		std::string req = buffer;
-		std::string rsp_body;
-
-
-		if (0 != https_client.SendAndRecvHttp(req, rsp_body, err_msg))
-		{
-			//printf("SendAndRecvHttp err[%s]\n", err_msg.c_str() );
-			return -1;
-		}
-		https_client.Close();
-		//printf("Http Send:\n%s \n", req.c_str() );
-		//printf("Http Recv:\n%s \n", rsp_body.c_str() );
-		return 0;
-	}
-
-};
-#endif
 
 class UserAccountPool {
 public:
@@ -139,7 +40,21 @@ private:
 	unsigned long long _num;
 };
 
-
+class ReqIdPool {
+public:
+	ReqIdPool() :_num(1) {};
+	std::string getIncre() {
+		SmartLock lock(_lock);
+		_num++;
+		std::stringstream ss;
+		ss
+			<< _num;
+		return ss.str();
+	}
+private:
+	MutexLock _lock;
+	unsigned long long _num;
+};
 
 class ReqPool {
 public:
@@ -157,10 +72,12 @@ public:
 		{
 			index = 1;
 		}
+		std::string req_id = taf::TC_Singleton<ReqIdPool>::getInstance()->getIncre();
 		ReqInfo req_info;
 		req_info = _req_list[index - 1];
-		req_info._req = TC_Common::replace(req_info._req, "$user_id", user_id);
-		req_info._req = TC_Common::replace(req_info._req, "$family_id", family_id);
+		req_info._req = taf::TC_Common::replace(req_info._req, "$user_id", user_id);
+		req_info._req = taf::TC_Common::replace(req_info._req, "$family_id", family_id);
+		req_info._req = taf::TC_Common::replace(req_info._req, "$req_id", req_id);
 		return req_info;
 	}
 	
@@ -187,47 +104,15 @@ private:
 	std::vector<ReqInfo> _req_list;
 };
 
-class log_file {
-public:
-	int Init(const std::string &filename)
-	{
-		_handle = fopen(filename.c_str(), "a+");
-		if (_handle == NULL)
-		{
-			return -1;
-		}
-		return 0;
-	}
 
-	void log(const std::string &log)
-	{
-		SmartLock smart_lock(_lock);
-		unsigned long t_id = thread_id();
-		std::string now = taf::TC_Common::now2str("%Y-%m-%d %H:%M:%S");
-		std::stringstream ss;
-		ss
-			<< "[" << now << "]"
-			<< "[" << t_id << "]"
-			<< log;
-		fputs(ss.str().c_str(), _handle);
-	}
-	log_file() :_handle(NULL) {};
-	~log_file() {
-		SmartLock smart_log(_lock);
-		fclose(_handle);
-	}
-private:
-	FILE *_handle;
-	MutexLock _lock;
-};
+
 
 class TestCase_IOT : public TestCase
 {
 public:
-	TestCase_IOT(std::vector<TcpInfo> &ip_port,std::string &log_file)
+	TestCase_IOT(std::vector<TcpInfo> &ip_port)
 	{
 		_ip_port.assign(ip_port.begin(), ip_port.end());
-		_log_file = log_file;
 	};
 	virtual int Init(void*arg)
 	{
@@ -256,36 +141,29 @@ public:
 			printf("SendAndRcv fail,ret:%d\n", ret);
 			return -1;
 		}
-		if (!_log_file.empty())
-		{
-			log_file * log = taf::TC_Singleton<log_file>::getInstance();
-			stringstream ss;
-			ss
-				<< "req:"
-				<< req_info._req << "\n"
-				<< "rsp:" << rsp
-				<< std::endl;
-			log->log(ss.str());
-		}
+
 		//判断成功失败
 		//std::string succ_flag = "code\":0";
 		if (rsp.find(req_info._assert) != std::string::npos || rsp.find("code\":0") != std::string::npos)
 		{
+			stringstream ss;
+			ss
+				<< "success\n"
+				<< "req:"<< req_info._req
+				<< "rsp:" << rsp
+				<< std::endl;
+			taf::TC_Singleton<log_file>::getInstance()->log_debug(ss.str());
 			return 0;
 		}
 		else {
-			if (!_log_file.empty())
-			{
-				log_file * log = taf::TC_Singleton<log_file>::getInstance();
-				stringstream ss;
-				ss
-					<< "assert fail!\nreq:"
-					<< req_info._req << "\n"
-					<< "rsp:" << rsp << "\n"
-					<< "assert:" << req_info._assert
-					<< std::endl;
-				log->log(ss.str());
-			}
+			stringstream ss;
+			ss
+				<< "assert fail!\n"
+				<< "req:"<< req_info._req
+				<< "rsp:" << rsp
+				<< "assert:" << req_info._assert
+				<< std::endl;
+			taf::TC_Singleton<log_file>::getInstance()->log_error(ss.str());
 			return -2;
 		}
 	}
@@ -299,22 +177,18 @@ public:
 		std::string rsp;
 		//替换变量
 		UserAccountPool * pool = taf::TC_Singleton<UserAccountPool>::getInstance();
-		std::string req = TC_Common::replace(login_req, "$phone", pool->getIncre());
+		std::string req = taf::TC_Common::replace(login_req, "$phone", pool->getIncre());
 		int ret = client->tcp_iot(req, rsp);
 		if (ret != 0)
 		{
 			printf("SendAndRcv1 fail,ret:%d\n", ret);
 			return -1;
 		}
-		if (!_log_file.empty())
-		{
-			log_file * log = taf::TC_Singleton<log_file>::getInstance();
-			stringstream ss;
-			ss
-				<< "req:" << req << "\n"
-				<< "rsp:" << rsp << "\n";
-			log->log(ss.str());
-		}
+		stringstream ss;
+		ss
+			<< "req:" << req << "\n"
+			<< "rsp:" << rsp << "\n";
+		taf::TC_Singleton<log_file>::getInstance()->log_error(ss.str());
 		//判断成功失败
 		
 		std::string succ_flag = "code\":0";
@@ -359,7 +233,6 @@ public:
 private:
 	// 在这里定义需要使用的成员变量
 	std::vector<TcpInfo> _ip_port;
-	std::string _log_file;
 	std::string _user_id;
 	std::string _family_id;
 };
@@ -394,19 +267,16 @@ int main(int argc, char* argv[])
 	printf("%s\n", s.c_str());
 	printf("============================================\n");
 
-	if (!cmd_info.log_file.empty())
-	{
-		log_file * log = taf::TC_Singleton<log_file>::getInstance();
-		log->Init(cmd_info.log_file);
-		log->log(cmd_info.to_str());
-	}
+	log_file * log = taf::TC_Singleton<log_file>::getInstance();
+	log->Init(cmd_info.log_file,cmd_info.is_debug);
+	log->log_error(cmd_info.to_str());
 	//初始化预设参数
 
 	taf::TC_Singleton<UserAccountPool>::getInstance()->Init(atoll(cmd_info._first_user_phone.c_str()));
 	taf::TC_Singleton<ReqPool>::getInstance()->Init(cmd_info._req_list);
 	// 测试框架实例
 	TestFrame tf;
-	TestCase_IOT case1(cmd_info._tcp_info,cmd_info.log_file);
+	TestCase_IOT case1(cmd_info._tcp_info);
 	tf.SetTestCase(&case1);
 	/**
 	switch (cmd)
