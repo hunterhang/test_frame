@@ -62,7 +62,7 @@ public:
 	{
 		_req_list = req_list;
 	}
-	ReqInfo getReq(std::string &user_id, std::string &family_id)
+	ReqInfo getReq(std::string &user_id, std::string &family_id,std::string &token,std::string &phone)
 	{
 		struct timeval tv;
 		gettimeofday(&tv, 0);
@@ -77,27 +77,34 @@ public:
 		req_info = _req_list[index - 1];
 		req_info._req = taf::TC_Common::replace(req_info._req, "$user_id", user_id);
 		req_info._req = taf::TC_Common::replace(req_info._req, "$family_id", family_id);
+		req_info._req = taf::TC_Common::replace(req_info._req, "$token", token);
 		req_info._req = taf::TC_Common::replace(req_info._req, "$req_id", req_id);
+		req_info._req = taf::TC_Common::replace(req_info._req, "$phone", phone);
 		return req_info;
 	}
-	
-	static int getVal(const std::string &rsp, const std::string &name,const size_t pos,std::string &val)
+	static int getVal(const std::string &rsp, const std::string &name, std::string &val, bool is_number = true)
 	{
+		size_t pos = 2;
+		std::string ends = ",";
+		size_t name_len = name.size();
+		if (!is_number)
+		{
+			pos = 3;
+			ends = "\"";
+		}
 		size_t p1 = rsp.find(name);
 		if (p1 == std::string::npos)
 		{
-			printf("get user_id from rsp fail!\n");
-			return -2;
+			return -1;
 		}
-		size_t p2 = rsp.find_first_of(",", p1 + 1);
+		size_t p2 = rsp.find_first_of(ends, p1 + name_len + pos);
 		if (p2 == std::string::npos)
 		{
-			printf("get user_id from rsp fail!\n");
-			return -3;
+			return -2;
 		}
 		std::string s_rsp = rsp;
-		size_t name_len = name.size();
-		val = s_rsp.substr(p1 + name_len+pos, p2 - p1 - name_len -pos);
+		
+		val = s_rsp.substr(p1 + name_len + pos, p2 - p1 - name_len - pos);
 		return 0;
 	}
 private:
@@ -133,7 +140,7 @@ public:
 		Client* client = NULL;
 		client = (Client*)arg;
 		std::string rsp;
-		ReqInfo req_info = taf::TC_Singleton<ReqPool>::getInstance()->getReq(_user_id,_family_id);
+		ReqInfo req_info = taf::TC_Singleton<ReqPool>::getInstance()->getReq(_user_id,_family_id,_token,_phone);
 		
 		int ret = client->tcp_iot(req_info._req, rsp);
 		if (ret != 0)
@@ -148,17 +155,19 @@ public:
 		{
 			stringstream ss;
 			ss
-				<< "success\n"
+				<< "success!\n"
 				<< "req:"<< req_info._req
 				<< "rsp:" << rsp
+				<< "assert:" <<req_info._assert
 				<< std::endl;
 			taf::TC_Singleton<log_file>::getInstance()->log_debug(ss.str());
+			ReqPool::getVal(rsp, "\"token", _token, false);
 			return 0;
 		}
 		else {
 			stringstream ss;
 			ss
-				<< "assert fail!\n"
+				<< "fail!\n"
 				<< "req:"<< req_info._req
 				<< "rsp:" << rsp
 				<< "assert:" << req_info._assert
@@ -177,7 +186,8 @@ public:
 		std::string rsp;
 		//替换变量
 		UserAccountPool * pool = taf::TC_Singleton<UserAccountPool>::getInstance();
-		std::string req = taf::TC_Common::replace(login_req, "$phone", pool->getIncre());
+		_phone = pool->getIncre();
+		std::string req = taf::TC_Common::replace(login_req, "$phone", _phone);
 		int ret = client->tcp_iot(req, rsp);
 		if (ret != 0)
 		{
@@ -195,28 +205,37 @@ public:
 		if (rsp.find(succ_flag) != std::string::npos)
 		{
 			std::string val;
-			int ret = ReqPool::getVal(rsp, "user_id", 2, val);
+			int ret = ReqPool::getVal(rsp, "user_id", val);
 			if (ret != 0)
 			{
-				printf("getVal fail!ret:%d\n", ret);
+				printf("getVal user_id fail!ret:%d\n", ret);
 				return -2;
 			}
 			_user_id = val;
+
+			ret = ReqPool::getVal(rsp, "\"token",val,false);
+			if (ret != 0)
+			{
+				printf("getVal token fail!ret:%d\n", ret);
+				return -3;
+			}
+			_token = val;
+
 			ret = client->tcp_iot(family_info_req, rsp);
 			if (ret != 0)
 			{
 				printf("SendAndRcv1 fail,ret:%d\n", ret);
-				return -3;
+				return -4;
 			}
 			if (rsp.find(succ_flag) == std::string::npos)
 			{
 				printf("api fail!req:%s\n rsp:%s\n", family_info_req.c_str(),rsp.c_str());
 				return -5;
 			}
-			ret = ReqPool::getVal(rsp, "family_id", 2, val);
+			ret = ReqPool::getVal(rsp, "family_id",val);
 			if (ret != 0)
 			{
-				printf("getVal fail!ret:%d\n", ret);
+				printf("getVal family_id fail!ret:%d\n", ret);
 				return -6;
 			}
 			_family_id = val;
@@ -235,6 +254,8 @@ private:
 	std::vector<TcpInfo> _ip_port;
 	std::string _user_id;
 	std::string _family_id;
+	std::string _token;
+	std::string _phone;
 };
 
 int main(int argc, char* argv[])
