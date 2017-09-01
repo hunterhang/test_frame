@@ -23,7 +23,7 @@ int LoadTestConfig::parse(std::string &content)
 	if (jerr != json_tokener_success)
 	{
 		printf("parse json str fail!\n");
-		return -1;
+		return -2;
 	}
 
 	//判断svr 是否是数组类型
@@ -31,7 +31,7 @@ int LoadTestConfig::parse(std::string &content)
 	{
 		printf("json str not array!\n");
 		json_object_put(root);
-		return -2;
+		return -3;
 	}
 	int size = json_object_array_length(root);
 	for (int i = 0; i < size; i++)
@@ -132,13 +132,13 @@ int LoadTestConfig::parse(std::string &content)
 		if (!json_object_object_get_ex(_cmd_info, "req_list", &_req_list_obj))
 		{
 			err_info = "it is invalid req, no req_list";
-			return -1;
+			return -4;
 		}
 		if (!json_object_is_type(_req_list_obj, json_type_array))
 		{
 			printf("_req_list_obj str not array!\n");
 			json_object_put(root);
-			return -2;
+			return -5;
 		}
 		int ssize = json_object_array_length(_req_list_obj);
 		

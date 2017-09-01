@@ -42,8 +42,9 @@ public:
 		int res = SendHttp(httpBuffer, rspBuffer);
 		return res;
 	}
-	int tcp_iot(const string &send_buf, string &rsp_buf);
+	int tcp_iot(const string &send_buf, string &rsp_buf, unsigned short &sock);
 
+	int sync_tcp_iot(const string &send_buf);
 
 protected:
 	int GetServer(string& ip, int& port);
@@ -61,6 +62,7 @@ protected:
 private:
 	vector< pair<string, int> >  addrs;
 	int							sockfd;
+	bool _is_first_connect;
 };
 
 #endif

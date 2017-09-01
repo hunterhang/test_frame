@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <semaphore.h>
-
+#include "../tcinclude/tc_singleton.h"
 #include "testsynch.h"
 
 class TestFrameStatistic;
@@ -53,11 +53,16 @@ class TestFrame
 		// 设置阀值，单位：毫秒
 		int SetDelayThreshold(int threshold/*ms*/);
 
+		//设置每个线程每秒跑的请求数
+		int SetReqNum(unsigned int num);
+
 		void *ThreadFunc(void *arg);
 
 		TestCase *cpTestCase;
 
-		TestFrameStatistic *cTestFrameStatistic;
+		
+
+		//TestFrameStatistic *cTestFrameStatistic;
 
 		int cDelayThreshold;
 
@@ -66,6 +71,8 @@ class TestFrame
 		int cRepeatCountConst;
 		int cDurationTime;
 		int cFrequenceConst;
+		// 异常时，每个线程跑每秒跑多少次
+		unsigned int cReqNum;
 		AtomicCounter cFrequence;
 		AtomicCounter cRepeatCount;
 
@@ -92,13 +99,14 @@ class TestFrameThread
 
 	private:
 		int cID;
+		unsigned int req_num;
 		pthread_t cThreadID;
 };
 
 class TestFrameStatistic
 {
 	public:
-		TestFrameStatistic(TestFrame *tl);
+		TestFrameStatistic();
 		~TestFrameStatistic();
 
 		void IncreaseSuccessCount();
@@ -107,7 +115,7 @@ class TestFrameStatistic
 
 		void Output();
 
-		TestFrame *cpTestFrame;
+		//TestFrame *cpTestFrame;
 
 		pthread_mutex_t cMutex;
 

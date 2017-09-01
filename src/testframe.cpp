@@ -10,6 +10,7 @@
 #include <math.h>
 #include "Client.h"
 #include "log.h"
+#include "../tcinclude/tc_epoller.h"
 
 TestCase::TestCase()
 {
@@ -29,7 +30,7 @@ TestFrame::TestFrame()
 	cFrequenceConst = 0;
 	cDelayThreshold = 0;
 
-	cTestFrameStatistic = new TestFrameStatistic(this);
+	//cTestFrameStatistic = new TestFrameStatistic(this);
 }
 
 TestFrame::~TestFrame()
@@ -81,7 +82,7 @@ int TestFrame::Run()
 		{
 			{
 				// 输出统计结果
-				if (now > begin) cTestFrameStatistic->Output();
+				if (now > begin) 	taf::TC_Singleton<TestFrameStatistic>::getInstance()->Output(); 
 
 				// 总量控制
 				if (cRepeatCountConst > 0 && cRepeatCount <= 0)
@@ -127,6 +128,12 @@ int TestFrame::SetTestCase(TestCase *tc)
 	return 0;
 }
 
+int TestFrame::SetReqNum(unsigned int num)
+{
+	cReqNum = num;
+	return 0;
+}
+
 int TestFrame::SetThreadNum(int num)
 {
 	cThreadNum = num;
@@ -166,6 +173,7 @@ TestFrameThread::TestFrameThread(TestFrame *tl, int id)
 {
 	cpTestFrame = tl;
 	cID = id;
+	req_num = 0;
 }
 
 TestFrameThread::~TestFrameThread()
@@ -203,6 +211,11 @@ int TestFrameThread::RunX()
 		printf("PreExecute fail!%d\n", rc);
 		return -1;
 	}
+	else {
+		printf("PreExecute success,thread_id:%d\n", cID);
+	}
+	time_t now;
+	now = time(NULL);
 	while (1)
 	{
 		// 流量控制
@@ -230,8 +243,22 @@ int TestFrameThread::RunX()
 		{
 			break;
 		}
-
-		rc = Execute(&client);
+		if ( time(NULL) > now)
+		{
+			//printf("thread_id:%d,req_num:%d\n",cID,req_num);
+			req_num = 0;
+			now = time(NULL);
+		}
+		if (req_num >= cpTestFrame->cReqNum)
+		{
+			//printf("sleep:%d,now:%u,req_num:%u,cReqNum:%u\n", cID,now,req_num,cpTestFrame->cReqNum);
+			usleep(10);
+		}
+		else {
+			req_num++;
+			rc = Execute(&client);
+		}
+		
 	}
 
 	return rc;
@@ -248,12 +275,17 @@ int TestFrameThread::Execute(void *arg)
 	gettimeofday(&begin, NULL);
 	// 执行测试案例
 	rc = cpTestFrame->cpTestCase->Execute(arg);
+
+
 	gettimeofday(&end, NULL);
 	//end = clock();
-	int delay = floor((((end.tv_usec + 1000000 * end.tv_sec) - (begin.tv_usec + 1000000 * begin.tv_sec)))/1000);
+	//int delay = floor((((end.tv_usec + 1000000 * end.tv_sec) - (begin.tv_usec + 1000000 * begin.tv_sec)))/1000);
 	//int delay = (end - begin)*1000/CLOCKS_PER_SEC;
 	//int delay = (end - begin);
-	cpTestFrame->cTestFrameStatistic->UpdateDelay(delay);
+	//cpTestFrame->cTestFrameStatistic->UpdateDelay(delay);
+	
+	/**
+	taf::TC_Singleton<TestFrameStatistic>::getInstance()->UpdateDelay(delay);
 
 	if (rc == 0)
 	{
@@ -263,7 +295,7 @@ int TestFrameThread::Execute(void *arg)
 	{
 		cpTestFrame->cTestFrameStatistic->IncreaseFailureCount();
 	}
-
+	**/
 	return rc;
 }
 
@@ -278,7 +310,7 @@ void *TestFrameThread::ThreadFunc(void *arg)
 	return NULL;
 }
 
-TestFrameStatistic::TestFrameStatistic(TestFrame *tl):cpTestFrame(tl)
+TestFrameStatistic::TestFrameStatistic()
 {
 	pthread_mutex_init(&cMutex, NULL);
 
@@ -346,13 +378,13 @@ void TestFrameStatistic::UpdateDelay(int delay)
 	{
 		cMinDelayTime_ps = delay;
 	}
-
+	/**
 	if(cpTestFrame->cDelayThreshold && delay > cpTestFrame->cDelayThreshold)
 	{
 		cTimeoutCount++;
 		cTimeoutCount_ps++;
 	}
-
+	**/
 	pthread_mutex_unlock(&cMutex);
 }
 

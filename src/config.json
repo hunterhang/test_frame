@@ -1,0 +1,63 @@
+[
+{
+	"desc":"user_get_profile",
+		"cmd":10002,
+		"ip_port":"127.0.0.1:1000",
+		"first_user_phone":"19900000000",
+		"req_list":[
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_update_user_profile\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"name\":\"user($user_id)\",\"nick\":\"nick($user_id)\",\"gender\":1,\"avatar\":\"http://image.tianjimedia.com/uploadImages/2015/186/25/NJ058R604O8I.jpg\",\"birthday\":\"1986-12-12\"}}}\n",
+			"assert":"code\":0"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_auth\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"token\":\"$token\",\"user_id\":$user_id}}}\n",
+			"assert":"code\":0"
+		},{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"um_get_user_profile\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"user_id\":$user_id}}}\n\n",
+			"assert":"code\":0"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_info\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id}}}\n",
+			"assert":"code\":-16027"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_apply_code\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id}}}\n",
+			"assert":"code\":-16009"
+		},
+		{
+			"req": "{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_family_list\",\"timestamp\":12345667,\"req_id\":$req_id}}\n",
+			"assert":"code\":0"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_invitation\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id,\"target_user_id\":$user_id}}}\n",
+			"assert":"code\":-16016"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_get_member_list\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id}}}\n",
+			"assert":"code\":0"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"fm_switch_family\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id}}}\n",
+			"assert":"code\":-16002"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"dm_get_devices_by_family\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id,\"device_category_id\":0,\"user_id\":$user_id,\"page\":{\"size\":10,\"begin\":0}}}}\n",
+			"assert":"code\":-16002"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"dm_get_user_account\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"list\":[$user_id]}}}\n",
+			"assert":"code\":-403"
+		},
+		{
+			"req":"{\"uuid\":\"111\", \"encry\":\"false\", \"content\":{\"method\":\"dm_get_room_list\",\"timestamp\":12345667,\"req_id\":$req_id,\"params\":{\"family_id\":$family_id,\"user_id\":$user_id}}}\n",
+			"assert":"code\":0"
+		}
+		],
+		"thread_num":1000,
+		"load_test_time":1440000,
+		"times_limit":20000000000,
+		"frequence":20000,
+		"log_file":"./test2.log",
+		"debug":"false"
+}
+]

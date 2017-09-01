@@ -2,3 +2,5 @@
 iot_load_test
 *.o
 iot_mult_load_test
+bin/*
+src/iot_async_load_test

@@ -8,9 +8,9 @@ CC=gcc
 CXX=g++
 GCCVER := $(shell $(CC) -dumpversion | awk -F. '{ print $$1"."$$2}' )
 
-CFLAGS=-g -O2 -fPIC -Wall -pipe -fno-ident -D_GNU_SOURCE -D_REENTRANT -DTIXML_USE_STL -Wno-deprecated
+CFLAGS=-g -O2 -fPIC -Wall -pipe -fno-ident -D_GNU_SOURCE -D_REENTRANT -DTIXML_USE_STL -Wno-deprecated -Wunused-variable
 
-TARGET = iot_mult_load_test
+TARGET = iot_async_load_test
 
 BINARY = $(patsubst %.cpp, obj/%.o, $(wildcard *.cpp))
 
@@ -19,6 +19,7 @@ all:$(TARGET)
 $(TARGET):$(BINARY)
 	$(CXX) $? -o $@ $(CFLAGS) $(INCLUDE) $(LIBS)
 	cp $(TARGET) ../bin/
+	cp $(TARGET) ~/upload/
 
 obj/%.o:%.cpp
 	$(CXX) -c $< -o $@ $(CFLAGS) $(INCLUDE)

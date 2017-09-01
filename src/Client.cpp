@@ -14,11 +14,16 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include "../tcinclude/tc_http.h"
+#include "../tcinclude/tc_epoller.h"
+#include "../tcinclude/tc_singleton.h"
+
 using namespace std;
+
+extern taf::TC_Epoller g_epoll;
 
 #define TIME_OUT 3
 
-Client::Client() :sockfd(-1)
+Client::Client() :sockfd(-1),_is_first_connect(true)
 {
 }
 
@@ -153,7 +158,7 @@ int Client::SendHttp(const string &httpBuffer, string &rspBuffer)
 	return SDK_SUCCESS;
 }
 
-int Client::tcp_iot(const string &send_buf, string &rsp_buf)
+int Client::tcp_iot(const string &send_buf, string &rsp_buf,unsigned short &sock)
 {
 	if (sockfd == -1) {
 		sockfd = socket(AF_INET, SOCK_STREAM, 0);//创建socket
@@ -179,6 +184,7 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 		addr.sin_addr.s_addr = inet_addr(ip.c_str());
 		bzero(&(addr.sin_zero), 8);
 
+
 		/* 发送连接请求 */
 		ret = connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
 		if (ret < 0)
@@ -188,6 +194,8 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 			printf("connect sockfd fail!%d\n", ret);
 			return SDK_ERR_SOCKET;
 		}
+		g_epoll.add(sockfd, sockfd, EPOLLIN);
+		sock = sockfd;
 	}
 
 	/*设置TCP接收超时*/
@@ -252,6 +260,67 @@ int Client::tcp_iot(const string &send_buf, string &rsp_buf)
 	return SDK_SUCCESS;
 
 }
+
+
+
+int Client::sync_tcp_iot(const string &send_buf)
+{
+	if (sockfd == -1) {
+		sockfd = socket(AF_INET, SOCK_STREAM, 0);//创建socket
+		if (sockfd < 0) {
+			printf("create sock fail!%d\n", sockfd);
+			return SDK_ERR_SOCKET;
+		}
+
+		string ip, err_msg;
+		int port = 0;
+		int ret = -1;
+
+		if (GetServer(ip, port) < 0)
+		{
+			printf("GetServer fail!\n");
+			return SDK_ERR_ADDRESS;
+		}
+
+		struct sockaddr_in addr;
+		/* 设置连接目的地址 */
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+		addr.sin_addr.s_addr = inet_addr(ip.c_str());
+		bzero(&(addr.sin_zero), 8);
+
+		/* 发送连接请求 */
+		ret = connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
+		if (ret < 0)
+		{
+			close(sockfd);
+			sockfd = -1;
+			printf("connect sockfd fail!%d\n", ret);
+			return SDK_ERR_SOCKET;
+		}
+		int flags = fcntl(sockfd, F_GETFL, 0);
+		fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+	}
+
+	/*设置TCP接收超时*/
+	struct timeval timeout = { 0,3000 };
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+	unsigned int size = 0;
+	/*发送*/
+	size = send(sockfd, send_buf.c_str(), send_buf.length(), 0);
+	if (size != send_buf.length())
+	{
+		close(sockfd);
+		sockfd = -1;
+		printf("send fail!%d\n", size);
+		return SDK_ERR_SOCKET;
+	}
+
+	return SDK_SUCCESS;
+
+}
+
 
 
 int Client::GetServer(string& ip, int& port)
