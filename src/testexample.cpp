@@ -22,7 +22,7 @@
 #define QUERY_HTTP() client->http(httpBuffer,rspBuffer)
 const unsigned int LEN_MAXRECV = 4096;
 
-taf::TC_Epoller g_epoll(false);
+taf::TC_Epoller g_epoll(true);
 
 
 using namespace std;
@@ -119,9 +119,9 @@ public:
 			{
 				++timeout_num;
 				//printf("timeout:%s,count:%zu,sec:%ld,uec:%ld\n", it->second._req.c_str(),_pool.size(),it->second._tv.tv_sec,it->second._tv.tv_usec);
-				printf("timeout_num:%u\n", timeout_num);
 			}
 		}
+		printf("timeout_num:%u,size:%zu\n", timeout_num,_pool.size());
 	}
 
 	std::map<std::string, ReqQueueItem> _pool;
@@ -341,9 +341,16 @@ private:
 
 void *rcv(void *argv)
 {
+	time_t now;
+	now = time(NULL);
 	g_epoll.create(10240);
 	do {
-		taf::TC_Singleton<ReqQueue>::getInstance()->print(2000000);
+		if (time(NULL) > now)
+		{
+			now = time(NULL);
+			taf::TC_Singleton<ReqQueue>::getInstance()->print(2000000);
+			taf::TC_Singleton<TestFrameStatistic>::getInstance()->Output();
+		}
 		int fd_cnt = g_epoll.wait(1);
 		if (fd_cnt <= 0)
 		{
@@ -411,6 +418,7 @@ void *rcv(void *argv)
 							if ((i == v.size() - 1) && is_full == false)
 							{
 								taf::TC_Singleton<HandleInput>::getInstance()->update(it, v[i]);
+								continue;
 							}
 							std::string req_id;
 							unsigned int timecost = 0;
@@ -420,7 +428,7 @@ void *rcv(void *argv)
 								if (taf::TC_Singleton<ReqQueue>::getInstance()->find(req_id, req_item, timecost) != 0)
 								{
 									taf::TC_Singleton<TestFrameStatistic>::getInstance()->IncreaseFailureCount();
-									printf("fail=======can not found, req_id:%s,req:%s,rsp:%s,s:%s\n", req_item._req.c_str(),req_id.c_str(), v[i].c_str(), s.c_str());
+									printf("fail=======can not found, req_id:%s,req:%s,rsp:%s,s:%s\n",req_id.c_str(), req_item._req.c_str(), v[i].c_str(), s.c_str());
 									return NULL;
 								}
 								else {
@@ -440,7 +448,7 @@ void *rcv(void *argv)
 								//return NULL;
 							}
 						}
-						if (size_recv == sizeof(chunk))
+						if (strlen(chunk) == sizeof(chunk))
 						{
 							continue;
 						}

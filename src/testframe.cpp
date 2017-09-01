@@ -82,7 +82,7 @@ int TestFrame::Run()
 		{
 			{
 				// 输出统计结果
-				if (now > begin) 	taf::TC_Singleton<TestFrameStatistic>::getInstance()->Output(); 
+				//if (now > begin) 	taf::TC_Singleton<TestFrameStatistic>::getInstance()->Output(); 
 
 				// 总量控制
 				if (cRepeatCountConst > 0 && cRepeatCount <= 0)
@@ -251,12 +251,13 @@ int TestFrameThread::RunX()
 		}
 		if (req_num >= cpTestFrame->cReqNum)
 		{
-			//printf("sleep:%d,now:%u,req_num:%u,cReqNum:%u\n", cID,now,req_num,cpTestFrame->cReqNum);
+			printf("threadID:%d,now:%lu,req_num:%u,cReqNum:%u\n", cID,now,req_num,cpTestFrame->cReqNum);
 			usleep(10);
 		}
 		else {
 			req_num++;
 			rc = Execute(&client);
+			
 		}
 		
 	}
