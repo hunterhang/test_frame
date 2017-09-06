@@ -341,6 +341,13 @@ private:
 
 void *rcv(void *argv)
 {
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(0, &mask);
+	if (pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0) {
+		fprintf(stderr, "set thread affinity failed\n");
+	}
+
 	time_t now;
 	now = time(NULL);
 	g_epoll.create(10240);
@@ -428,7 +435,7 @@ void *rcv(void *argv)
 								if (taf::TC_Singleton<ReqQueue>::getInstance()->find(req_id, req_item, timecost) != 0)
 								{
 									taf::TC_Singleton<TestFrameStatistic>::getInstance()->IncreaseFailureCount();
-									printf("fail=======can not found, req_id:%s,req:%s,rsp:%s,s:%s\n",req_id.c_str(), req_item._req.c_str(), v[i].c_str(), s.c_str());
+									printf("fail=======can not found, rsp:%s\n",v[i].c_str());
 									return NULL;
 								}
 								else {
@@ -529,8 +536,14 @@ int main(int argc, char* argv[])
 	{
 		tf.SetFrequence(cmd_info.frequence);
 	}
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	//int inher = PTHREAD_EXPLICIT_SCHED;
+	//pthread_attr_setinheritsched(&attr, inher);
+	int policy = SCHED_FIFO;
+	pthread_attr_setschedpolicy(&attr, policy);
 
-	int rc = pthread_create(&thread, NULL, rcv, NULL);
+	int rc = pthread_create(&thread, &attr, rcv, NULL);
 
 	if (rc) { 
 		printf("ERROR; return code from pthread_create() is %d\n", rc);

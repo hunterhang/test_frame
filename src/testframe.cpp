@@ -95,16 +95,15 @@ int TestFrame::Run()
 				{
 					break;
 				}
-
 				// 流量控制
-				if (cFrequenceConst > 0)
-				{
+				//if (cFrequenceConst > 0)
+				//{
+				printf("Broadcast,%lu,lasttime:%lu\n", now,lasttime);
 					cLock.Lock();
-
 					cFrequence = cFrequenceConst;
 					cCond.Broadcast();
 					cLock.Unlock();
-				}
+				//}
 			}
 
 			lasttime = now;
@@ -214,11 +213,11 @@ int TestFrameThread::RunX()
 	else {
 		printf("PreExecute success,thread_id:%d\n", cID);
 	}
-	time_t now;
-	now = time(NULL);
+
 	while (1)
 	{
 		// 流量控制
+		/**
 		if (cpTestFrame->cFrequenceConst > 0)
 		{
 			cpTestFrame->cLock.Lock();
@@ -236,23 +235,22 @@ int TestFrameThread::RunX()
 				continue;
 			}
 			cpTestFrame->cLock.Unlock();
-		}
+		}**/
 
 		// 控制发包数量
 		if (cpTestFrame->cRepeatCountConst > 0 && (cpTestFrame->cRepeatCount--) < 0)
 		{
 			break;
 		}
-		if ( time(NULL) > now)
-		{
-			//printf("thread_id:%d,req_num:%d\n",cID,req_num);
-			req_num = 0;
-			now = time(NULL);
-		}
 		if (req_num >= cpTestFrame->cReqNum)
 		{
-			printf("threadID:%d,now:%lu,req_num:%u,cReqNum:%u\n", cID,now,req_num,cpTestFrame->cReqNum);
-			usleep(10);
+			time_t now;
+			now = time(NULL);
+			//printf("threadID:%d,now:%lu,req_num:%u,cReqNum:%u\n", cID,now,req_num,cpTestFrame->cReqNum);
+			req_num = 0;
+			cpTestFrame->cLock.Lock();
+			cpTestFrame->cCond.Wait(cpTestFrame->cLock);
+			cpTestFrame->cLock.Unlock();
 		}
 		else {
 			req_num++;

@@ -2,7 +2,7 @@
 {
 	"desc":"user_get_profile",
 		"cmd":10002,
-		"ip_port":"127.0.0.1:1000|127.0.0.1:1001",
+		"ip_port":"127.0.0.1:1000",
 		"first_user_phone":"19900000000",
 		"req_list":[
 		{
@@ -53,10 +53,10 @@
 			"assert":"code\":0"
 		}
 		],
-		"thread_num":800,
+		"conn_num":1000,
 		"load_test_time":1440000,
 		"times_limit":20000000000,
-		"frequence":20,
+		"frequence":20000,
 		"log_file":"./test2.log",
 		"debug":"false"
 }
